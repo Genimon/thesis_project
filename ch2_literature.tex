@@ -1,0 +1,76 @@
+%================================================================
+\chapter{Literature Review}
+\label{ch:lit}
+%================================================================
+
+\section{Introduction}
+
+This chapter provides a critical review of the literature underpinning the four principal domains of this research: the evolution of sentiment analysis methods, the application of social media data to consumer behaviour modelling, comparative machine learning approaches for text classification, and interpretability in \gls{ai}-driven analytical systems. The review is synthesised to identify the convergent methodological gaps that motivate this dissertation and to justify the specific design choices made in the research framework.
+
+\section{The Evolution of Sentiment Analysis Methods}
+
+\subsection{Lexicon-Based Approaches}
+
+The earliest computational approaches to sentiment analysis were lexicon-based, relying on pre-constructed dictionaries of words annotated with polarity values to assign sentiment scores to text documents. Among the most widely applied lexica in social media analytics is the \gls{vader}, developed by \citet{hutto2014vader}. \gls{vader} was specifically calibrated for short, informal social media text and incorporates rules for handling capitalisation, punctuation, degree modifiers, and negation --- features ubiquitous in Twitter discourse but absent from general-purpose lexica. Research into \gls{vader} has consistently demonstrated strong performance on short social media posts, offering both computational efficiency and a transparent, human-interpretable scoring logic that makes it directly applicable to business analytics contexts.
+
+However, the limitations of purely lexicon-based approaches are well-documented. Contextual subtlety, sarcasm, irony, negation in complex syntactic structures, and domain-specific vocabulary are consistently identified as failure modes for dictionary-based sentiment analysis \citep{cambria2017senticnet}. These limitations significantly reduce the reliability of purely lexical methods when applied to the full breadth of consumer social media discourse, motivating the hybrid approach adopted in this study.
+
+\subsection{Classical Machine Learning Approaches}
+
+To address the contextual limitations of lexicon-based methods, researchers adopted supervised machine learning classifiers trained on labelled sentiment corpora. Logistic Regression, \gls{svm}, and Naive Bayes classifiers emerged as the dominant approaches, typically using bag-of-words or \gls{tfidf} feature representations \citep{pang2008opinion}. These methods demonstrated substantial improvements in classification accuracy over lexicon-based methods on standard benchmarks, with \gls{svm} achieving strong performance through its capacity to find optimal decision hyperplanes in high-dimensional feature spaces \citep{adugna2022comparison}.
+
+Ensemble methods, including Random Forests \citep{breiman2001random}, further advanced performance by reducing overfitting through the aggregation of multiple decision trees trained on random feature subsets. The \gls{rf} classifier is particularly well-suited to high-dimensional text classification tasks because its feature importance outputs provide interpretable information about the most discriminative words and phrases --- a property directly relevant to the explainability objectives of this dissertation.
+
+\subsection{Deep Learning and Transformer-Based Models}
+
+The introduction of attention-based transformer models marked a paradigm shift in \gls{nlp}. The \gls{bert} model \citep{devlin2019bert} demonstrated state-of-the-art performance across a wide range of \gls{nlp} benchmarks by leveraging contextual word embeddings learned from large-scale unsupervised pretraining. In sentiment classification tasks, \gls{bert}-based models have consistently achieved accuracies in the range of 83--87\% on large-scale social media datasets including Sentiment140 \citep{sun2019fine}.
+
+DistilBERT \citep{sanh2019distilbert}, introduced as a compressed distillation of \gls{bert}, retains approximately 97\% of \gls{bert}'s language understanding capability at 40\% lower computational cost and 60\% of the parameter count. This efficiency advantage makes DistilBERT the recommended transformer benchmark for resource-constrained research contexts. Despite their performance advantages, transformer models present a fundamental transparency problem: they function as computational black boxes that provide no directly interpretable explanation for their classification decisions \citep{danilevsky2020survey}.
+
+\section{Social Media Data for Consumer Behaviour Analysis}
+
+\subsection{The Predictive Value of Social Media Sentiment}
+
+Twitter has emerged as a primary venue for unsolicited consumer expression, offering access to real-time, large-scale opinion data that traditional market research methods cannot replicate. \citet{antczak2024influence} demonstrate that social media marketing communications exert measurable influence on consumer purchasing decisions. \citet{bollen2011twitter} established a landmark finding that Twitter public mood states Granger-cause movements in the Dow Jones Industrial Average with a predictive accuracy of 87.6\% at a three-to-four-day lag, providing strong theoretical grounding for the hypothesis that social media sentiment can serve as a leading indicator of aggregate behavioural change.
+
+\citet{asur2010predicting} similarly demonstrated that the volume and sentiment of tweets about forthcoming films predicted box office revenues more accurately than prediction market forecasts, illustrating the complementary predictive value of volume metrics alongside sentiment scores. These foundational studies motivate the construction and testing of sentiment velocity as a predictive feature in this research.
+
+\subsection{Limitations of Binary Sentiment Frameworks in Consumer Research}
+
+A persistent criticism of sentiment analysis as applied in consumer behaviour research is the overreliance on binary classification frameworks that reduce complex emotional states to a simple positive or negative polarity. \citet{mohammad2013crowdsourcing} argue that this reduction compromises the validity of consumer insights derived from sentiment analysis, because neutral and ambivalent sentiment states are not merely noise but carry substantive behavioural information. A consumer who posts about a product in neutral terms may represent an undecided purchaser rather than a disengaged one --- a distinction with meaningful implications for targeting and messaging strategy.
+
+The challenges of multi-class sentiment classification are well-documented. Class imbalance, where neutral instances are under-represented in annotated corpora constructed through distant supervision (as in Sentiment140), introduces learning bias towards majority classes. These challenges justify the methodological investments made in this dissertation in \gls{smote} oversampling, transformer-based modelling, and comprehensive per-class \gls{roc}-\gls{auc} evaluation.
+
+\section{Feature Engineering for Social Media Sentiment Classification}
+
+Feature engineering is a critical determinant of model performance in text classification tasks, particularly for social media data where the vocabulary is dynamic, informal, and domain-specific. \gls{tfidf} vectorisation with n-gram extensions has been consistently demonstrated as an effective statistical feature representation for short text classification, capturing both unigram frequency patterns and phrasal sentiment expressions such as ``not good'' or ``highly recommend'' that unigram representations fail to encode \citep{ramos2003using,pang2008opinion}.
+
+The inclusion of structural metadata features --- tweet length, punctuation frequency, and hashtag count --- provides complementary discriminative signal beyond lexical content. \citet{rill2014politwi} demonstrate that such structural features improve classification accuracy on Twitter sentiment datasets by capturing paralinguistic cues such as emotional emphasis through exclamation mark frequency. The combination of lexicon-based and statistical features in a hybrid representation, as proposed by this dissertation, preserves the interpretability advantages of lexical approaches while capturing the contextual richness of statistical representations \citep{thelwall2010sentiment}.
+
+\section{Model Evaluation Frameworks for Sentiment Classification}
+
+\subsection{Standard Classification Metrics}
+
+Standard classification evaluation metrics --- accuracy, precision, recall, and F1-score --- provide complementary perspectives on model performance. Accuracy is susceptible to inflation in imbalanced class distributions, potentially masking poor performance on minority classes. F1-score, as the harmonic mean of precision and recall, is recommended as the primary performance metric when class distributions are unequal \citep{powers2011evaluation}. Weighted F1-score, which aggregates class-level scores weighted by class support, is appropriate for the three-class problem in this study.
+
+\subsection{ROC-AUC for Multi-Class Evaluation}
+
+The Receiver Operating Characteristic \gls{auc} provides a threshold-independent measure of a classifier's discriminative ability, representing the probability that a randomly selected positive instance is ranked higher than a randomly selected negative instance \citep{fawcett2006introduction}. Unlike accuracy and F1-score, which depend on a fixed classification threshold, \gls{auc} evaluates performance across all possible thresholds, making it robust to threshold selection bias.
+
+For multi-class problems, the \gls{ovr} strategy extends \gls{roc}-\gls{auc} computation by treating each class as the positive class in turn. \citet{hand2001simple} provide the theoretical framework for multi-class \gls{auc} computation. Macro-averaged \gls{ovr} \gls{auc} --- which weights each class equally regardless of its frequency --- is the recommended headline metric for this study because it ensures that the Neutral class, which is under-represented in Sentiment140, receives equal weight. Comparing macro versus weighted \gls{auc} reveals the degree to which performance differences are driven by minority class handling, providing diagnostic insight into model fairness across sentiment categories.
+
+\subsection{Explainable AI in Sentiment Analysis}
+
+The tension between predictive performance and interpretability --- the accuracy-explainability trade-off --- is a central concern in applied machine learning for business analytics \citep{rudin2019stop}. \gls{shap}, grounded in cooperative game theory, assigns each input feature a Shapley value representing its marginal contribution to the model's output \citep{lundberg2017unified}. \gls{lime} \citep{ribeiro2016should} provides model-agnostic local explanations by training an interpretable surrogate model on perturbations of the input instance. Despite their theoretical grounding, \gls{shap} and \gls{lime} remain under-utilised in sentiment-driven consumer analytics \citep{danilevsky2020survey}, and their integration into this study directly addresses this documented gap.
+
+\section{Synthesis and Research Positioning}
+
+The review reveals four convergent methodological gaps that define the research space occupied by this dissertation:
+\begin{enumerate}
+  \item The preponderance of \textbf{binary sentiment classification frameworks} sacrifices nuanced emotional representation.
+  \item The dominant evaluation paradigm \textbf{underutilises threshold-independent metrics} such as multi-class \gls{roc}-\gls{auc}.
+  \item The majority of sentiment analysis research is \textbf{descriptive rather than predictive}.
+  \item High-performance models achieve accuracy at the \textbf{cost of interpretability}, limiting practical adoption.
+\end{enumerate}
+
+This dissertation addresses all four gaps within a unified framework: multi-class classification, comprehensive \gls{roc}-\gls{auc} evaluation with per-class analysis, temporal predictive modelling via sentiment velocity, and dual \gls{shap} and \gls{lime} explainability audits. The study is thus positioned at the intersection of technical innovation and applied \gls{bi} utility.

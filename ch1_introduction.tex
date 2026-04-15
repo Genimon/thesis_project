@@ -1,0 +1,44 @@
+%================================================================
+\chapter{Introduction}
+\label{ch:intro}
+%================================================================
+
+\section{Background and Motivation}
+
+The digital revolution of the past two decades has produced an unprecedented shift in the way consumers communicate opinions, preferences, and experiences. Social media platforms, and in particular microblogging services such as Twitter, have emerged as dominant venues for spontaneous, unsolicited consumer expression, generating hundreds of millions of posts each day that collectively constitute a living record of public sentiment at scale \citep{antczak2024influence}. For organisations operating in competitive consumer markets, this data represents a strategically significant intelligence resource: one that is real-time, unfiltered, and reflects genuine consumer attitudes rather than responses shaped by the presence of a researcher or the constraints of a survey instrument.
+
+Despite the evident promise of social media data for consumer analytics, its exploitation remains constrained by fundamental methodological limitations. The unstructured, noisy, and linguistically heterogeneous nature of social media text --- characterised by slang, sarcasm, abbreviations, emojis, and non-standard grammar --- poses substantial challenges for automated text analysis \citep{adeyemi2025influence}. Furthermore, the dominant paradigm in applied sentiment analysis has historically privileged binary classification frameworks that reduce complex emotional expressions to a simple positive or negative label, discarding the neutral and ambivalent sentiments that frequently characterise real consumer attitudes \citep{mohammad2013crowdsourcing}. Perhaps most significantly, much existing sentiment analysis research remains descriptive in orientation: characterising what consumers felt at a given moment rather than leveraging sentiment signals to predict how they are likely to behave in the near future \citep{pak2010twitter}.
+
+These limitations collectively represent a gap between the analytical potential of social media sentiment data and its practical realisation as a predictive \gls{bi} tool. This dissertation is motivated by the imperative to close that gap --- to move beyond sentiment description towards sentiment-driven prediction, and to do so in a way that is technically rigorous, interpretable, and applicable to real organisational decision-making contexts.
+
+\section{Research Problem}
+
+The central research problem addressed by this dissertation is as follows: \emph{given the availability of large-scale, annotated social media text data, is it possible to construct a machine learning system that not only classifies sentiment with high accuracy across multiple sentiment categories, but also leverages the temporal dynamics of those sentiment signals to generate predictive insights about consumer behavioural tendencies?}
+
+This problem encompasses several subsidiary challenges. First, effective sentiment classification of social media text requires a preprocessing and feature engineering pipeline capable of handling linguistic noise while preserving semantically relevant sentiment signals. Second, the comparison of multiple machine learning architectures spanning classical statistical models, ensemble methods, neural networks, and transformer-based deep learning requires a rigorous, multi-metric evaluation framework that accounts for both predictive performance and interpretability. Third, the operationalisation of sentiment as a predictor of behaviour requires the derivation of temporal features --- specifically sentiment velocity and intensity change --- that can serve as leading indicators of consumer engagement proxies.
+
+\section{Aims and Objectives}
+
+The primary aim of this project is to design and implement a Python-based predictive system that correlates quantified sentiment derived from social media text with measurable consumer behavioural patterns, evaluated using a comprehensive multi-metric framework including \gls{roc}-\gls{auc} analysis and \gls{xai} techniques.
+
+\subsection*{Specific Objectives}
+\begin{enumerate}
+  \item To process and extract relevant features --- including sentiment polarity, intensity scores, brand mention frequency, and structural tweet characteristics --- from the Sentiment140 dataset using a combination of lexicon-based methods (\gls{vader}) and statistical feature extraction (\gls{tfidf} with bi-gram extensions).
+  \item To train, compare, and optimise a suite of machine learning models encompassing Logistic Regression, \gls{rf}, Feedforward Neural Network (\gls{mlp}), and fine-tuned DistilBERT, using multi-class sentiment classification (positive, negative, neutral) as the target task, with 5-fold cross-validation for hyperparameter optimisation.
+  \item To operationalise temporal sentiment dynamics --- specifically sentiment velocity, intensity change, and message volume --- as proxy leading indicators of consumer engagement, and to test their predictive relationships through Pearson lag correlation analysis.
+  \item To evaluate all models using a dual framework of standard classification metrics and multi-class \gls{roc}-\gls{auc} (\gls{ovr}, per-class, macro, and weighted), and to conduct \gls{xai} audits using \gls{shap} and \gls{lime} to ensure the system produces interpretable, actionable business intelligence insights.
+\end{enumerate}
+
+\section{Significance and Contributions to Knowledge}
+
+This dissertation makes several contributions to the existing body of knowledge in social media analytics and applied machine learning. Most significantly, it advances the transition from descriptive to predictive sentiment analytics by introducing and operationalising \emph{sentiment velocity} as a proxy leading indicator of consumer behavioural change --- a contribution that addresses a gap consistently identified in the literature, where the majority of sentiment analysis systems function as monitoring tools rather than predictive instruments \citep{bollen2011twitter}.
+
+The adoption of a multi-class sentiment framework --- encompassing positive, negative, and neutral categories --- represents a methodological advance over binary classification paradigms that dominate the field. The dissertation further contributes a reproducible implementation pipeline that integrates hybrid feature engineering, comparative model training, temporal analysis, and dual-framework evaluation including multi-class \gls{roc}-\gls{auc} and \gls{xai} tools in a single unified system. This pipeline constitutes a reusable template applicable to commercial social media intelligence contexts.
+
+\section{Scope and Delimitations}
+
+This study is delimited to the analysis of English-language Twitter data from the Sentiment140 corpus. It does not address real-time streaming data ingestion, though the pipeline is designed to accommodate such an extension. The behavioural outcomes employed are proxy measures derived from tweet volume and engagement patterns within the corpus, rather than ground-truth consumer purchase or conversion data. The transformer benchmark is implemented using DistilBERT rather than full \gls{bert} due to computational resource constraints, a choice supported by \citet{sanh2019distilbert}, who demonstrate comparable performance for this task.
+
+\section{Dissertation Structure}
+
+The remainder of this dissertation is organised as follows. Chapter~\ref{ch:lit} presents a critical review of the relevant literature. Chapter~\ref{ch:method} describes the research methodology. Chapter~\ref{ch:impl} details the full implementation of the data science pipeline. Chapter~\ref{ch:results} presents and discusses the experimental results. Chapter~\ref{ch:conc} concludes the dissertation with a synthesis of contributions, acknowledgement of limitations, and proposals for future research.

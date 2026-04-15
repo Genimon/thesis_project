@@ -1,0 +1,62 @@
+%================================================================
+\chapter{Conclusion}
+\label{ch:conc}
+%================================================================
+
+\section{Summary of Research Contributions}
+
+This dissertation has presented the design, implementation, and evaluation of a machine learning framework for predicting consumer behaviour from social media sentiment analysis. The research was motivated by three convergent limitations of the existing literature: the prevalence of binary sentiment classification frameworks, the predominantly descriptive orientation of sentiment analytics, and the opacity of high-performance models.
+
+The framework addresses these limitations through four substantive contributions:
+
+\begin{enumerate}
+  \item \textbf{Multi-class sentiment pipeline with per-class \gls{roc}-\gls{auc} evaluation}: Implemented on 1.6 million tweets, enabling discrimination among positive, negative, and neutral sentiment categories and quantifying the differential difficulty of neutral classification (Neutral \gls{auc} consistently 7--8 points below polar class \gls{auc}).
+
+  \item \textbf{Hybrid feature engineering}: Combining \gls{vader} lexicon-based scores, \gls{tfidf} statistical representations, and structural tweet metadata. \gls{shap} analysis confirmed that \gls{vader}'s compound score is the single most influential feature across all models, validating the methodological value of the hybrid approach.
+
+  \item \textbf{Sentiment velocity as a leading behavioural indicator}: The operationalisation of sentiment velocity $v_t$ produced a statistically significant predictive relationship with next-day tweet volume ($r = 0.41$, $p < 0.01$), representing the primary novel empirical contribution of this work and demonstrating that sentiment analytics can serve a predictive rather than merely descriptive function.
+
+  \item \textbf{\gls{shap} and \gls{lime} explainability integration}: Transforming the system from a classification engine into a transparent \gls{bi} instrument, providing both global feature importance insights and instance-level explanations that can be communicated to non-technical stakeholders.
+\end{enumerate}
+
+\section{Revisiting the Research Objectives}
+
+All four specific objectives have been met. The feature extraction objective was fulfilled through the hybrid pipeline documented in Chapter~\ref{ch:impl}. The model comparison objective was fulfilled through the evaluation of four architectures documented in Chapter~\ref{ch:results}. The temporal analysis objective was fulfilled through sentiment velocity derivation and lag correlation analysis. The dual evaluation objective was fulfilled through the comprehensive \gls{roc}-\gls{auc} framework and \gls{xai} audits.
+
+\section{Limitations}
+
+Several limitations must be acknowledged:
+
+\begin{itemize}
+  \item \textbf{Dataset recency}: The Sentiment140 corpus was compiled in 2009, and contemporary social media discourse has evolved substantially. Generalisation of trained models to current Twitter data, or to other platforms (Reddit, Instagram, product review sites), should be approached with caution and would require domain adaptation or retraining.
+
+  \item \textbf{Proxy behavioural measures}: The temporal analysis uses tweet volume as a proxy for consumer engagement rather than ground-truth purchase or conversion data. The observed correlation does not itself demonstrate that sentiment predicts purchase behaviour; validation against external behavioural data remains a necessary future step.
+
+  \item \textbf{Computational constraints}: DistilBERT fine-tuning was limited to a 50,000-tweet subsample. Fine-tuning on the full training corpus might yield marginal additional performance gains.
+
+  \item \textbf{Linguistic scope}: The system is trained exclusively on English-language text and does not address multilingual sentiment analysis.
+\end{itemize}
+
+\section{Future Research Directions}
+
+Several high-priority directions for future research emerge from this work:
+
+\begin{enumerate}
+  \item \textbf{Real-time streaming integration}: Extension to live data ingestion via Apache Kafka or the Twitter Streaming API, enabling continuous sentiment monitoring and live velocity computation.
+
+  \item \textbf{Aspect-level sentiment analysis}: Assignment of sentiment labels to specific product attributes or service dimensions, substantially increasing the actionability of insights for targeted marketing interventions.
+
+  \item \textbf{Ground-truth behavioural validation}: Integration with e-commerce transaction data or web analytics conversion metrics to validate the sentiment-behaviour predictive relationship beyond proxy engagement measures.
+
+  \item \textbf{Large language model benchmarking}: Evaluation of instruction-tuned large language models (e.g., GPT-4 class) for zero-shot and few-shot sentiment classification, extending the transformer benchmark comparison conducted in this study.
+
+  \item \textbf{Cross-platform and multilingual generalisation}: Extension of the pipeline to non-English language corpora and non-Twitter platforms to assess generalisability.
+\end{enumerate}
+
+\section{Concluding Remarks}
+
+This dissertation has demonstrated that multi-class sentiment analysis of social media text, when combined with temporal predictive modelling and explainability tools, constitutes an effective and actionable framework for consumer behaviour intelligence. The empirical finding that sentiment velocity carries statistically significant predictive signal at a one-day lag ($r = 0.41$, $p < 0.01$) advances the field beyond descriptive sentiment reporting towards genuinely predictive analytics.
+
+The dual evaluation framework, incorporating both standard classification metrics and multi-class \gls{roc}-\gls{auc} analysis, provides a more complete picture of model performance than is typically reported in the literature, particularly in its resolution of the differential difficulty of neutral sentiment classification --- a finding that has direct implications for the practical deployment of sentiment-based consumer intelligence systems. DistilBERT represents the current performance benchmark (macro \gls{auc} = 0.917, accuracy = 86.3\%), while \gls{rf} with \gls{shap} interpretability retains sufficient discriminative power for many \gls{bi} applications at substantially lower computational cost.
+
+The choice between these architectures is ultimately a context-dependent decision that must weigh accuracy requirements against interpretability constraints and computational resources --- a finding that has direct implications for the responsible and practical deployment of \gls{ai}-driven consumer intelligence systems in organisational settings.

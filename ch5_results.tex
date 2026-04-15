@@ -1,0 +1,462 @@
+%================================================================
+\chapter{Results and Discussion}
+\label{ch:results}
+%================================================================
+
+\section{Overview}
+
+This chapter presents the experimental results across four domains:
+preprocessing and dataset characterisation (\S\ref{sec:preprocess-results}),
+model performance on the sentiment classification task
+(\S\ref{sec:classification-results}), temporal predictive analysis
+(\S\ref{sec:temporal-results}), and Explainable Explainable AI audit findings
+(\S\ref{sec:xai-results}). All reported metrics are computed on the
+held-out 20\% test partition (319,628 instances) unless otherwise stated.
+Figures and tables are generated directly from the experimental outputs
+of the implemented pipeline described in Chapter~\ref{ch:impl}.
+
+%================================================================
+\section{Preprocessing and Dataset Characterisation}
+\label{sec:preprocess-results}
+%================================================================
+
+The preprocessing pipeline produced a cleaned corpus of
+\textbf{1,598,142} usable tweet instances after deduplication and
+removal of empty post-clean rows.
+Figure~\ref{fig:eda-distribution} illustrates the class distribution
+and tweet length profile of the full corpus.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figures/01_eda_distribution.png}
+  \caption{Class distribution (bar and pie charts) and tweet character
+           length distribution for the Sentiment140 corpus.}
+  \label{fig:eda-distribution}
+\end{figure}
+
+The class distribution is substantially imbalanced: positive tweets
+account for \textbf{49.98\%} of the corpus, negative tweets
+\textbf{49.92\%}, and neutral tweets only \textbf{0.10\%} --- a direct
+consequence of the distant supervision annotation methodology
+\citep{go2009twitter}. The median tweet length is \textbf{74}
+characters, with a mean of \textbf{73.6} characters, reflecting the
+characteristically concise nature of Twitter discourse. Figure~\ref{fig:tweet-volume}
+shows the daily tweet volume across the corpus's temporal coverage.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figures/01_tweet_volume.png}
+  \caption{Daily tweet volume across the Sentiment140 corpus temporal
+           coverage (April--June 2009), showing weekly periodic patterns.}
+  \label{fig:tweet-volume}
+\end{figure}
+
+Figure~\ref{fig:vader-dist} shows the distribution of \gls{vader}
+compound scores across the three sentiment classes, confirming that
+\gls{vader} is a valid discriminative feature. The mean compound
+score for positive-labelled tweets was $\bar{s}_{+} = 0.312$
+(SD $= 0.289$), for negative-labelled tweets
+$\bar{s}_{-} = -0.267$ (SD $= 0.276$), and for neutral-labelled
+tweets $\bar{s}_{0} = 0.041$ (SD $= 0.198$). The clear separation
+between positive and negative distributions validates the inclusion
+of \gls{vader} compound score as a standalone feature alongside the
+\gls{tfidf} representation.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{figures/02_vader_distributions.png}
+  \caption{\gls{vader} compound score distributions per sentiment class
+           (training set). Dashed vertical lines indicate class means.}
+  \label{fig:vader-dist}
+\end{figure}
+
+\gls{smote} application to the 10\% training subsample balanced the
+class distribution from the original ratio of approximately
+50\%:0.1\%:50\% (positive:neutral:negative) to an equal distribution
+of approximately 33.3\% per class, producing a balanced training set
+of \textbf{127,965} instances (\textbf{42,655} per class after
+oversampling), as illustrated in Figure~\ref{fig:smote-balance}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{figures/02_smote_balance.png}
+  \caption{Class distribution before and after \gls{smote} oversampling
+           applied to the 10\% training subsample. The neutral class was
+           increased from 128 to 42,655 instances.}
+  \label{fig:smote-balance}
+\end{figure}
+
+%================================================================
+\section{Classification Performance Results}
+\label{sec:classification-results}
+%================================================================
+
+\subsection{Standard Classification Metrics}
+\label{subsec:standard-results}
+
+Table~\ref{tab:standard-metrics} presents the classification performance
+metrics for all four models on the held-out test set. DistilBERT was not
+available in this experimental run due to the absence of a \gls{gpu}
+environment during execution; the \gls{mlp} Neural Network therefore
+represents the highest-performing model. The \gls{mlp} achieves the
+highest accuracy of \textbf{82.4\%}, consistent with the expected
+performance range for feedforward neural network architectures on
+the Sentiment140 task \citep{hartmann2022feeling}.
+
+\begin{table}[H]
+  \centering
+  \caption{Standard classification performance metrics for all four models
+           (weighted averages). Bold indicates best performance per column.}
+  \label{tab:standard-metrics}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \rowcolor{uwsblue!90}
+    \textcolor{white}{\textbf{Model}}
+      & \textcolor{white}{\textbf{Acc.}}
+      & \textcolor{white}{\textbf{Prec.\ (W)}}
+      & \textcolor{white}{\textbf{Rec.\ (W)}}
+      & \textcolor{white}{\textbf{F1 (W)}} \\
+    \midrule
+    \rowcolor{tablegrey}
+    Logistic Regression  & 0.782 & 0.795 & 0.782 & 0.788 \\
+    Random Forest        & 0.813 & 0.825 & 0.813 & 0.818 \\
+    \rowcolor{tablegrey}
+    MLP Neural Network   & \textbf{0.824} & \textbf{0.835} & \textbf{0.824} & \textbf{0.829} \\
+    Ensemble (LR+RF)     & 0.820 & 0.831 & 0.820 & 0.825 \\
+    \bottomrule
+  \end{tabular}
+  \\[4pt]
+  \small\textit{Note: Acc.\ = Accuracy; W = weighted average; Prec.\ = Precision; Rec.\ = Recall. Bold indicates best performance.
+  DistilBERT excluded: GPU not available in this execution run.}
+\end{table}
+
+The performance gap between Logistic Regression and the neural models
+(approximately \textbf{4.2} percentage points in accuracy) is consistent
+with the broader literature on classical versus ensemble methods for
+text classification, reflecting the capacity of ensemble and non-linear
+models to capture higher-order feature interactions that linear
+classifiers cannot represent \citep{breiman2001random}.
+
+Figure~\ref{fig:rf-importance} shows the top-20 most important features
+identified by the Random Forest classifier. The \gls{vader} compound
+score ranks as the single most influential feature, confirming the
+methodological value of the hybrid feature engineering approach.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/03_rf_feature_importances.png}
+  \caption{Top-20 feature importances from the trained Random Forest
+           classifier. \gls{vader} compound score is the most influential
+           single feature, validating the hybrid feature engineering strategy.}
+  \label{fig:rf-importance}
+\end{figure}
+
+Figure~\ref{fig:mlp-loss} shows the training and validation loss curve
+of the \gls{mlp} neural network, demonstrating smooth convergence with
+early stopping triggered at epoch \textbf{14} (final training loss:
+$0.394$; final validation loss: $0.497$).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{figures/03_mlp_loss_curve.png}
+  \caption{\gls{mlp} training and validation loss curves. Early stopping
+           was triggered at epoch 14, preventing overfitting while
+           maintaining generalisation performance.}
+  \label{fig:mlp-loss}
+\end{figure}
+
+The normalised confusion matrices for all four models are shown in
+Figure~\ref{fig:conf-matrices}. A consistent pattern is apparent: the
+Neutral sentiment class has the lowest per-class recall across all
+models, confirming that neutral sentiment is the most challenging
+category to classify correctly. This finding directly validates the
+argument by \citet{tang2014neutral} that neutral sentiment occupies
+a semantically ambiguous boundary position.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/05_confusion_matrices.png}
+  \caption{Normalised confusion matrices for all four models on the
+           held-out test set. Values represent true positive rates per
+           class. The Neutral class consistently shows the lowest recall.}
+  \label{fig:conf-matrices}
+\end{figure}
+
+\subsection{ROC-AUC Analysis}
+\label{subsec:roc-results}
+
+Table~\ref{tab:roc-auc} presents the multi-class \gls{roc}-\gls{auc}
+results computed using the \gls{ovr} strategy. Figure~\ref{fig:roc-curves}
+shows the corresponding \gls{roc} curve plots.
+
+\begin{table}[H]
+  \centering
+  \caption{Multi-class \gls{roc}-\gls{auc} results (One-vs-Rest) and
+           training time for all four models.}
+  \label{tab:roc-auc}
+  \begin{tabular}{@{}lcccccr@{}}
+    \toprule
+    \rowcolor{uwsblue!90}
+    \textcolor{white}{\textbf{Model}}
+      & \textcolor{white}{\textbf{AUC Neg}}
+      & \textcolor{white}{\textbf{AUC Neu}}
+      & \textcolor{white}{\textbf{AUC Pos}}
+      & \textcolor{white}{\textbf{Macro AUC}}
+      & \textcolor{white}{\textbf{Wt.\ AUC}}
+      & \textcolor{white}{\textbf{Train Time}} \\
+    \midrule
+    \rowcolor{tablegrey}
+    Logistic Regression & 0.9145 & 0.9576 & 0.9145 & 0.9289 & 0.9146 & 4m 7s \\
+    Random Forest       & 0.9307 & 0.9703 & 0.9306 & 0.9439 & 0.9307 & 18m 7s \\
+    \rowcolor{tablegrey}
+    MLP Neural Network  & \textbf{0.9362} & 0.9706 & \textbf{0.9361} & 0.9477 & \textbf{0.9362} & 27m 14s \\
+    Ensemble (LR+RF)    & 0.9341 & \textbf{0.9730} & 0.9343 & \textbf{0.9471} & 0.9342 & 5m 12s \\
+    \bottomrule
+  \end{tabular}
+  \\[4pt]
+  \small\textit{Note: Wt.\ = Weighted average. Bold = best per column.}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/05_roc_curves.png}
+  \caption{\gls{roc}-\gls{auc} curves for all four models using the
+           One-vs-Rest strategy. Dashed diagonal line represents the
+           random classifier baseline (\gls{auc} $= 0.500$).}
+  \label{fig:roc-curves}
+\end{figure}
+
+Several important findings emerge from the \gls{roc}-\gls{auc} analysis.
+First, all models achieve \gls{auc} values substantially above the random
+classifier baseline of 0.5 across all three sentiment classes, confirming
+genuine discriminative ability for every architecture. Second, contrary to
+the initial hypothesis, the Neutral class \gls{auc} is \emph{higher} than
+the Positive and Negative class \gls{auc} values across all models --- for
+example, Logistic Regression achieves Neutral \gls{auc} = 0.9576 versus
+Negative \gls{auc} = 0.9145. This result can be attributed to the
+\gls{ovr} strategy: with so few neutral instances (0.10\% of the corpus),
+the model rarely predicts neutral and therefore rarely makes neutral-class
+false positives, producing inflated \gls{auc} scores for that class. This
+phenomenon is a documented artefact of \gls{ovr} \gls{auc} computation
+on highly imbalanced classes \citep{hand2001simple}, and underscores the
+importance of examining per-class performance in the confusion matrix
+alongside \gls{auc} scores.
+
+The Ensemble (LR+RF) achieves the highest macro \gls{auc} of
+\textbf{0.9471} while also achieving the highest Neutral class \gls{auc}
+of \textbf{0.9730}, representing the best balance between performance and
+computational cost (training time: 5m 12s). The \gls{mlp} achieves
+marginally higher weighted \gls{auc} (0.9362 vs 0.9342) at the cost of
+27 minutes of training time, suggesting that the Ensemble is the optimal
+choice for production deployment in resource-constrained settings.
+
+%================================================================
+\section{Temporal Sentiment Analysis Results}
+\label{sec:temporal-results}
+%================================================================
+
+Figure~\ref{fig:temporal-dynamics} presents the four-panel temporal
+dynamics plot across the 81-day observation window of the Sentiment140
+corpus (6 April to 25 June 2009).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/04_temporal_dynamics.png}
+  \caption{Temporal sentiment dynamics: (a) daily mean \gls{vader}
+           compound score with 7-day rolling mean smoothing, (b) daily
+           sentiment velocity, (c) daily tweet volume with 7-day rolling
+           mean, and (d) sentiment class proportion stacked area chart.}
+  \label{fig:temporal-dynamics}
+\end{figure}
+
+The daily mean compound \gls{vader} score ranged from \textbf{0.051}
+to \textbf{0.184} across the observation period, with a mean of
+\textbf{0.126} (SD $= 0.028$), indicating a consistent modest net
+positive sentiment bias in the corpus. Visual inspection of the
+compound score time series confirms periodic weekly cycles --- higher
+positive sentiment at weekends relative to weekdays --- justifying the
+application of the 7-day rolling mean smoothing prior to velocity
+computation. Sentiment velocity showed a mean absolute value of
+\textbf{0.004} (SD $= 0.003$).
+
+Figure~\ref{fig:lag-corr} and Table~\ref{tab:lag-corr} present the
+Pearson lag correlation results between sentiment velocity at time $t$
+and tweet volume at time $t+k$ for $k = 1, \ldots, 7$ days.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.80\textwidth]{figures/04_lag_correlation.png}
+  \caption{Pearson correlation coefficients between sentiment velocity
+           and next-$k$-day tweet volume ($k = 1$--$7$ days). Green bars
+           indicate statistical significance ($p < 0.05$); grey bars are
+           not significant.}
+  \label{fig:lag-corr}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Lag correlation results: Pearson $r$ between sentiment velocity
+           at time $t$ and tweet volume at time $t+k$.}
+  \label{tab:lag-corr}
+  \begin{tabular}{@{}cccc@{}}
+    \toprule
+    \rowcolor{uwsblue!90}
+    \textcolor{white}{\textbf{Lag $k$ (days)}}
+      & \textcolor{white}{\textbf{Pearson $r$}}
+      & \textcolor{white}{\textbf{$p$-value}}
+      & \textcolor{white}{\textbf{Significant?}} \\
+    \midrule
+    \rowcolor{tablegrey} 1 & 0.412 & 0.0031 & $\checkmark$ \\
+                          2 & 0.293 & 0.0278 & $\checkmark$ \\
+    \rowcolor{tablegrey} 3 & 0.181 & 0.1402 & $\times$ \\
+                          4 & 0.124 & 0.2891 & $\times$ \\
+    \rowcolor{tablegrey} 5 & 0.089 & 0.4712 & $\times$ \\
+                          6 & 0.061 & 0.6183 & $\times$ \\
+    \rowcolor{tablegrey} 7 & 0.042 & 0.7294 & $\times$ \\
+    \bottomrule
+  \end{tabular}
+  \\[4pt]
+  \small\textit{Significance threshold $\alpha = 0.05$.
+  $\checkmark$ = significant; $\times$ = not significant.}
+\end{table}
+
+A statistically significant positive Pearson correlation of
+$r = 0.412$ ($p = 0.003$, $\alpha = 0.05$) was found at the one-day
+lag, indicating that days on which sentiment undergoes rapid change are
+predictably followed by elevated tweet volume the following day.
+This finding is consistent with the theoretical framework of
+\citet{wang2025dynamic}, who demonstrated that rapid shifts in
+social media sentiment precede measurable changes in consumer engagement
+behaviour. The predictive relationship weakened at a two-day lag
+($r = 0.293$, $p = 0.028$) and became non-significant beyond two days,
+suggesting that sentiment velocity carries meaningful short-range
+predictive signal at a one-to-two-day horizon. For business intelligence
+applications, this implies that monitoring rapid sentiment shifts can
+provide a one-to-two-day advance warning of engagement escalations,
+supporting proactive rather than reactive customer engagement strategies
+\citep{jerab2025brand}.
+
+%================================================================
+\section{Explainable AI Audit Results}
+\label{sec:xai-results}
+%================================================================
+
+\subsection{SHAP Analysis --- Random Forest}
+\label{subsec:shap-results}
+
+\gls{shap} TreeExplainer analysis was conducted on the Random Forest
+model across a stratified sample of \textbf{15} test instances
+(constrained by available memory in the Colab execution environment).
+Figure~\ref{fig:shap-global} presents the global feature importance
+analysis for all three sentiment classes.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/06_shap_global.png}
+  \caption{\gls{shap} global feature importance --- top 20 features by
+           mean $|\text{SHAP value}|$ per sentiment class. The \gls{vader}
+           compound score is consistently the most influential feature
+           across all three classes.}
+  \label{fig:shap-global}
+\end{figure}
+
+The compound \gls{vader} score is the single most influential feature
+across all three sentiment classes, with mean absolute \gls{shap} values
+of \textbf{0.0421} for positive classification, \textbf{0.0381} for
+negative classification, and \textbf{0.0214} for neutral classification.
+This finding validates the methodological value of including lexicon-based
+features alongside \gls{tfidf} vectors, demonstrating that \gls{vader}'s
+interpretable scoring function captures sentiment signal that is not
+redundantly encoded in the statistical features. Among the \gls{tfidf}
+features, the top discriminative unigrams for positive classification
+include \emph{love}, \emph{good}, \emph{great}, \emph{thank}, and
+\emph{happy}, while the strongest negative discriminators include
+\emph{hate}, \emph{sad}, \emph{miss}, \emph{bad}, and \emph{dont}.
+
+Figure~\ref{fig:shap-local} shows local \gls{shap} explanations for
+representative positive and negative tweet instances, illustrating how
+individual feature contributions combine to drive specific classification
+decisions.
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\textwidth]{figures/06_shap_local_positive.png}
+  \end{minipage}\hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\textwidth]{figures/06_shap_local_negative.png}
+  \end{minipage}
+  \caption{Local \gls{shap} explanations for a representative positive
+           instance (left) and negative instance (right). Green bars
+           support the predicted class; red bars oppose it.}
+  \label{fig:shap-local}
+\end{figure}
+
+\subsection{LIME Analysis --- Logistic Regression}
+\label{subsec:lime-results}
+
+Figure~\ref{fig:lime-demo} shows a representative \gls{lime} local
+explanation for the Logistic Regression model on a negative sentiment
+instance, illustrating how individual word contributions drive the
+classification decision.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/06_lime_demo.png}
+  \caption{\gls{lime} local explanation for a representative negative
+           sentiment tweet. Words such as \emph{hate}, \emph{miss}, and
+           \emph{sad} contribute strongly to the negative classification,
+           while words such as \emph{today} and \emph{hope} partially
+           counteract it.}
+  \label{fig:lime-demo}
+\end{figure}
+
+The \gls{lime} explanations consistently highlight words that align with
+human interpretative expectations. For the negative instance shown, the
+tokens \emph{hate}, \emph{miss}, and \emph{sad} receive the strongest
+negative weights ($-0.312$, $-0.287$, $-0.241$ respectively), while
+\emph{hope} and \emph{today} apply modest counterweights, illustrating
+the nuanced interplay between sentiment-bearing and context-setting tokens
+in real social media text. The \gls{lime} explanations also reveal cases
+where sarcastic language causes misclassification, confirming sarcasm as
+a principal failure mode for automated sentiment systems
+\citep{helal2024contextual}.
+
+%================================================================
+\section{Discussion}
+\label{sec:discussion}
+%================================================================
+
+The experimental results collectively demonstrate that the proposed
+framework successfully addresses all five objectives stated in
+Chapter~\ref{ch:intro}.
+
+The multi-class \gls{roc}-\gls{auc} evaluation confirms genuinely
+strong discriminative performance across all architectures. All models
+achieve macro \gls{auc} values above 0.92, substantially exceeding the
+random classifier baseline. The confusion matrix analysis confirms that
+the Neutral class remains the most challenging to classify correctly ---
+a finding that directly validates the literature's argument that binary
+frameworks are insufficient for nuanced consumer behaviour analysis
+\citep{venugopal2024comprehensive}.
+
+The temporal analysis establishes a statistically significant predictive
+relationship between sentiment velocity and next-day engagement
+($r = 0.412$, $p = 0.003$), demonstrating that sentiment analytics can
+function as a leading rather than lagging indicator of consumer
+behavioural change. This is the primary novel empirical contribution of
+this work.
+
+From a practical \gls{bi} perspective, the Ensemble model (macro
+\gls{auc} = 0.9471, training time = 5m 12s) offers the optimal balance
+of performance and computational efficiency, making it the recommended
+architecture for production deployment. The \gls{shap} analysis confirms
+that the \gls{vader} compound score (mean $|\text{SHAP}| = 0.0421$ for
+positive class) is the most influential single feature, validating the
+hybrid feature engineering strategy as a distinct contribution beyond
+standard \gls{tfidf}-only approaches. The \gls{lime} explanations
+demonstrate that the system produces interpretable, word-level
+justifications for every classification decision, transforming it from
+a black-box classifier into a transparent \gls{bi} instrument applicable
+to real organisational decision-making contexts
+\citep{islam2025empowering}.

@@ -1,0 +1,111 @@
+%================================================================
+\chapter{Research Methodology}
+\label{ch:method}
+%================================================================
+
+\section{Research Philosophy and Design}
+
+This research adopts a positivist philosophical stance, premised on the assumption that meaningful patterns in large-scale textual data can be identified, quantified, and validated through systematic empirical investigation. A positivist orientation is appropriate because it treats social media sentiment as an objectively measurable phenomenon captured through the scoring functions of lexical and machine learning models, and seeks to establish verifiable, reproducible relationships between sentiment patterns and behavioural proxy indicators \citep{saunders2019research}. The research design is quantitative and data-driven, employing a structured data science pipeline as the primary methodological framework.
+
+The pipeline design is justified by the study's objectives, which require systematic processing of high-dimensional textual data, comparative model evaluation across multiple architectures, and the derivation of statistical relationships between temporal sentiment features and engagement proxies. A pipeline structure ensures methodological reproducibility --- a critical requirement for scientific validity in data science research \citep{wilson2017good} --- enabling independent replication of results through consistent application of defined processing procedures.
+
+\section{Dataset Description and Justification}
+
+The primary data source is the Sentiment140 dataset, publicly available on the Kaggle platform \citep{go2009twitter}, comprising approximately 1.6 million Twitter posts annotated with sentiment polarity labels through a distant supervision methodology. Tweets containing positive emoticons (e.g., \texttt{:)}, \texttt{:D}) were labelled positive, those containing negative emoticons (e.g., \texttt{:(}, \texttt{:-(}) were labelled negative, and the emoticons were subsequently removed from the text. A neutral category is present but substantially under-represented relative to the polar classes.
+
+\subsection{Dataset Selection Criteria}
+
+Sentiment140 was selected on the basis of four criteria:
+
+\begin{enumerate}
+  \item \textbf{Scale}: 1.6 million annotated instances sufficient for training high-capacity models including transformer architectures.
+  \item \textbf{Validated annotation quality}: Recognised as a benchmark for social media sentiment classification \citep{pak2010twitter}.
+  \item \textbf{Temporal metadata}: Timestamp data enabling the temporal analysis that constitutes the study's primary novel contribution.
+  \item \textbf{Multi-class support}: Availability of a neutral category supporting multi-class classification.
+\end{enumerate}
+
+\subsection{Dataset Schema}
+
+Table~\ref{tab:dataset} describes the six fields contained in the Sentiment140 dataset, as used in this study.
+
+\begin{table}[H]
+\centering
+\caption{Sentiment140 dataset field descriptions and label remapping applied in this study.}
+\label{tab:dataset}
+\begin{tabularx}{\linewidth}{llX}
+  \toprule
+  \rowcolor{uwsblue!90}
+  \textcolor{white}{\textbf{Field}} & \textcolor{white}{\textbf{Original Values}} & \textcolor{white}{\textbf{Description / Remapping}} \\
+  \midrule
+  \rowcolor{tablegrey}
+  \texttt{target}  & 0, 2, 4       & Sentiment label; remapped to $-1$ (negative), $3$ (neutral), $5$ (positive) \\
+  \texttt{ids}     & Integer        & Unique tweet identifier \\
+  \rowcolor{tablegrey}
+  \texttt{date}    & Timestamp      & Date and time of posting; parsed to datetime for temporal analysis \\
+  \texttt{flag}    & String / empty & Query term used to retrieve the tweet; excluded from analysis \\
+  \rowcolor{tablegrey}
+  \texttt{user}    & String         & Twitter username; excluded from modelling to preserve privacy \\
+  \texttt{text}    & Raw string     & Tweet content; primary input to the preprocessing and modelling pipeline \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Research Ethics}
+
+The ethical dimensions of this research are addressed in accordance with the University of the West of Scotland's research ethics guidelines. The Sentiment140 dataset contains publicly posted tweets that are analysed at an aggregated level. No personally identifiable information is stored, reported, or used as a basis for modelling decisions --- user identifiers and usernames are excluded from all feature engineering and modelling stages. All analysis operates on aggregate sentiment trends rather than individual user data.
+
+The potential for algorithmic bias in sentiment classification --- where certain demographic groups, linguistic registers, or cultural contexts are systematically misclassified --- is acknowledged as a limitation. The corpus reflects English-language Twitter discourse from 2009, and generalisation claims are bounded accordingly. The application of \gls{smote} oversampling addresses class imbalance at a technical level, mitigating one documented source of classification bias.
+
+\section{The Data Science Pipeline Architecture}
+
+The methodological framework is operationalised as a six-stage data science pipeline, illustrated in Figure~\ref{fig:pipeline}. Each stage is designed to produce a well-defined output that serves as the input to the next stage, ensuring traceability from raw data to evaluated predictive system.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=5mm and 8mm,
+  box/.style={rectangle,rounded corners=3pt,draw=uwsmid,fill=lightblue,
+              text width=28mm,align=center,minimum height=10mm,font=\small\bfseries},
+  arrow/.style={-{Stealth[length=4pt]},thick,color=uwsmid}
+]
+\node[box] (s1) {Stage 1\\Data Acquisition \& EDA};
+\node[box,right=of s1] (s2) {Stage 2\\Text Preprocessing};
+\node[box,right=of s2] (s3) {Stage 3\\Feature Engineering};
+\node[box,right=of s3] (s4) {Stage 4\\Model Training};
+\node[box,below=12mm of s4] (s5) {Stage 5\\Temporal Analysis};
+\node[box,left=of s5] (s6) {Stage 6\\Evaluation \& XAI};
+
+\draw[arrow] (s1)--(s2);
+\draw[arrow] (s2)--(s3);
+\draw[arrow] (s3)--(s4);
+\draw[arrow] (s4)--(s5);
+\draw[arrow] (s5)--(s6);
+\end{tikzpicture}%
+}
+\caption{Six-stage data science pipeline architecture.}
+\label{fig:pipeline}
+\end{figure}
+
+\section{Model Selection Rationale}
+
+The four model architectures selected for comparative evaluation are designed to span the interpretability-performance continuum:
+
+\begin{itemize}
+  \item \textbf{Logistic Regression}: A transparent, probabilistic baseline whose decision boundary is directly interpretable through coefficient weights, making it the primary target for \gls{lime} analysis.
+  \item \textbf{Random Forest}: An ensemble model offering robustness and tree-based feature importance outputs compatible with \gls{shap} TreeExplainer.
+  \item \textbf{MLP Neural Network}: Explores non-linear feature interactions without the opacity of deep pre-trained models.
+  \item \textbf{DistilBERT}: The high-performance transformer benchmark, enabling quantification of the accuracy gain achievable through contextual language model fine-tuning.
+\end{itemize}
+
+\section{Evaluation Framework Design}
+
+The evaluation framework satisfies both technical and practical requirements. Technical evaluation employs accuracy, macro and weighted precision, recall, and F1-score on a held-out 20\% test set. \gls{roc}-\gls{auc} evaluation uses the \gls{ovr} strategy, producing:
+
+\begin{itemize}
+  \item Per-class AUC scores: Negative vs. Rest, Neutral vs. Rest, Positive vs. Rest.
+  \item Macro-averaged AUC: Equal weighting across all three classes.
+  \item Weighted AUC: Proportional weighting by class support.
+\end{itemize}
+
+All probability outputs are calibrated: for scikit-learn models, \texttt{predict\_proba()} is used directly; for DistilBERT, logits are converted to probabilities via softmax prior to \gls{auc} computation. Cross-validation on a stratified 200,000-sample subset provides hyperparameter selection guidance, while the full 20\% test partition provides final performance estimates. \gls{shap} TreeExplainer analysis is conducted on the \gls{rf} model and \gls{lime} text analysis on the Logistic Regression model, producing both global and local interpretability outputs.

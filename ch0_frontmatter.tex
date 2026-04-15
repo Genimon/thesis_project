@@ -1,0 +1,30 @@
+%================================================================
+% ABSTRACT & ACKNOWLEDGEMENTS
+%================================================================
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+The proliferation of social media platforms has fundamentally transformed the landscape of consumer expression, generating vast repositories of unstructured, real-time textual data that carry rich signals about public opinion, preferences, and emergent behavioural patterns. Traditional approaches to market research, including surveys and focus groups, are increasingly unable to match the scale, velocity, and granularity of social media data. This dissertation addresses this gap by designing, implementing, and evaluating a comprehensive machine learning framework that harnesses sentiment analysis of social media text to predict consumer behavioural trends.
+
+The study employs the Sentiment140 dataset, comprising approximately 1.6 million Twitter posts annotated with sentiment polarity labels. A structured data science pipeline is constructed, encompassing rigorous text preprocessing using NLTK and spaCy, hybrid feature engineering combining lexicon-based sentiment scores derived from the \gls{vader} with statistical \gls{tfidf} representations and structural tweet metadata, and comparative training of four machine learning architectures: Logistic Regression, Random Forest (\gls{rf}), a Feedforward Neural Network (\gls{mlp}), and a fine-tuned DistilBERT transformer model.
+
+A novel contribution of this work is the operationalisation of temporal sentiment dynamics --- specifically \emph{sentiment velocity} and \emph{intensity change} --- as proxy leading indicators of consumer engagement. These measures are derived from time-aggregated sentiment predictions and subjected to lag correlation analysis, providing a methodologically grounded bridge between descriptive sentiment reporting and predictive behavioural intelligence.
+
+Model evaluation employs a dual framework encompassing standard classification metrics (accuracy, precision, recall, F1-score) and multi-class \gls{roc}-\gls{auc} analysis using a \gls{ovr} strategy, producing per-class, macro-averaged, and weighted AUC scores. DistilBERT achieves the highest classification accuracy of 86.3\% and a macro AUC of 0.917, confirming transformer architectures as the performance benchmark for social media sentiment classification. \gls{xai} audits conducted via \gls{shap} and \gls{lime} demonstrate that the framework produces interpretable, actionable business intelligence insights beyond raw classification output.
+
+The findings confirm that multi-class sentiment modelling, when coupled with temporal analysis and explainability tools, can serve as an effective predictive system for consumer behavioural intelligence, offering organisations a scalable, data-driven alternative to conventional market research methodologies.
+
+\vspace{6pt}
+\noindent\textbf{Keywords:} Sentiment Analysis, Consumer Behaviour Prediction, Machine Learning, Social Media Analytics, ROC-AUC, Explainable AI, VADER, BERT, TF-IDF, Temporal Sentiment Dynamics.
+
+%----------------------------------------------------------------
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+
+I wish to express my sincere gratitude to my project supervisor, Dr.\ Graeme McRobbie, for his expert guidance, constructive feedback, and consistent encouragement throughout the duration of this research. His insights into both the technical and academic dimensions of this work have been invaluable in shaping the rigour and direction of the dissertation.
+
+I am grateful to the School of Computing, Engineering and Physical Sciences at the University of the West of Scotland for providing the academic resources and computing infrastructure that supported this work. I acknowledge \citet{go2009twitter}, the creators of the Sentiment140 dataset, whose openly available annotated corpus made this large-scale empirical study possible.
+
+Finally, I am deeply grateful to my family and colleagues for their patience, moral support, and unwavering encouragement throughout this demanding academic undertaking.
+
+\cleardoublepage

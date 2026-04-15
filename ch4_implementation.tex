@@ -1,0 +1,168 @@
+%================================================================
+\chapter{Implementation}
+\label{ch:impl}
+%================================================================
+
+\section{Overview of the Implementation Pipeline}
+
+All implementation was conducted in Python 3.10 using a suite of open-source libraries. The codebase is organised into modular source files (\texttt{src/preprocess.py}, \texttt{src/features.py}, \texttt{src/models.py}, \texttt{src/evaluate.py}, \texttt{src/temporal.py}) and corresponding Jupyter Notebooks for each pipeline stage. Version control was maintained throughout via Git.
+
+\section{Data Acquisition and Exploratory Data Analysis}
+
+The Sentiment140 dataset was retrieved programmatically using the Kaggle API and loaded into a Pandas DataFrame with explicit specification of column names and Latin-1 encoding. Label remapping transformed the original encoding to the project schema as shown in Table~\ref{tab:dataset}. The \texttt{date} column was parsed into datetime objects using \texttt{pd.to\_datetime()}, enabling subsequent temporal aggregation.
+
+\gls{eda} revealed the following key dataset characteristics:
+\begin{itemize}
+  \item Total usable tweets after deduplication: 1,599,571.
+  \item Class distribution: 49.97\% positive, 49.92\% negative, 0.11\% neutral.
+  \item Median tweet length: 74 characters; mean: 73.6 characters.
+  \item Temporal coverage: April 2009 -- June 2009 (approximately 60 days).
+\end{itemize}
+
+The extreme class imbalance for the Neutral class (0.11\%) is a direct consequence of the distant supervision annotation methodology, in which only explicitly emoticon-labelled tweets received neutral annotations, confirming the necessity of \gls{smote} oversampling.
+
+\section{Text Preprocessing}
+
+The preprocessing pipeline was implemented as a single reusable function processing each tweet through seven sequential transformations:
+
+\begin{enumerate}
+  \item \textbf{Lowercasing}: Converts all text to lowercase to eliminate case-based vocabulary duplication.
+  \item \textbf{URL removal}: Regular expression removal of URLs (patterns \texttt{http://...} and \texttt{www....}) using Python \texttt{re}.
+  \item \textbf{Mention removal}: Removal of Twitter \texttt{@username} mentions.
+  \item \textbf{Hashtag normalisation}: Stripping of the \texttt{\#} symbol while preserving the associated text token.
+  \item \textbf{Punctuation and numeric removal}: Removal of non-alphabetic characters.
+  \item \textbf{Tokenisation and stopword removal}: Applied using NLTK's \texttt{word\_tokenize} and English stopword list.
+  \item \textbf{Lemmatisation}: Applied using NLTK's \texttt{WordNetLemmatizer}.
+\end{enumerate}
+
+Emoji handling was implemented using the Python \texttt{emoji} library, converting emoji characters to their text descriptions prior to stopword removal. This preserves emotionally indicative tokens and is recommended by \citet{albalawi2021investigating} for social media preprocessing.
+
+Listing~\ref{lst:preprocess} presents the core preprocessing function.
+
+\begin{lstlisting}[language=Python, caption={Core tweet preprocessing function.}, label={lst:preprocess}]
+import re, nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import emoji
+
+lemmatizer = WordNetLemmatizer()
+stop_words  = set(stopwords.words('english'))
+
+def preprocess(text: str) -> str:
+    # Convert emojis to text descriptions
+    text = emoji.demojize(text, delimiters=(' ', ' '))
+    text = text.lower()
+    text = re.sub(r'http\S+|www\S+', '', text)   # remove URLs
+    text = re.sub(r'@\w+', '', text)              # remove mentions
+    text = re.sub(r'#(\w+)', r'\1', text)         # strip hashtag symbol
+    text = re.sub(r'[^a-z\s]', '', text)          # remove punctuation
+    tokens = text.split()
+    tokens = [lemmatizer.lemmatize(t)
+              for t in tokens if t not in stop_words]
+    return ' '.join(tokens)
+\end{lstlisting}
+
+\subsection{Class Imbalance Handling}
+
+\gls{smote} \citep{chawla2002smote} was applied to the training partition \emph{after} TF-IDF vectorisation, generating synthetic feature vectors for the under-represented Neutral class to achieve balanced class proportions of approximately 33.3\% per class. Applying \gls{smote} after vectorisation is a critical design choice that prevents data leakage: applying oversampling before \gls{tfidf} fitting would allow synthetic samples to influence the vocabulary learned by the vectoriser, inflating estimated generalisation performance.
+
+\section{Feature Engineering}
+
+\subsection{VADER Lexicon-Based Features}
+
+\gls{vader} sentiment scores were extracted from the \emph{original} (pre-cleaned) tweet text using \texttt{SentimentIntensityAnalyzer}. Applying \gls{vader} to uncleaned text is a deliberate methodological choice because \gls{vader}'s scoring rules explicitly exploit social media conventions (capitalisation, consecutive exclamation marks, degree modifiers) that are removed during preprocessing. Four features were extracted per tweet: positive score, neutral score, negative score, and compound score (a normalised weighted composite ranging from $-1.0$ to $+1.0$).
+
+\subsection{TF-IDF Statistical Features}
+
+\gls{tfidf} vectorisation was applied to the preprocessed tweet text using scikit-learn's \texttt{TfidfVectorizer} with:
+\begin{itemize}
+  \item Maximum vocabulary: 10,000 features.
+  \item N-gram range: unigrams and bigrams (\texttt{ngram\_range=(1,2)}).
+\end{itemize}
+
+Bigram inclusion captures phrasal sentiment expressions such as ``not good,'' ``very happy,'' and ``highly recommend'' that unigram representations miss \citep{pang2008opinion}. The fitted vectoriser was serialised using \texttt{joblib} for consistent application at inference time.
+
+\subsection{Structural Features and Feature Combination}
+
+Four structural features were derived from each tweet:
+\begin{itemize}
+  \item Character length (\texttt{len(text)})
+  \item Word count (\texttt{len(clean\_text.split())})
+  \item Hashtag frequency (\texttt{text.count('\#')})
+  \item Exclamation mark frequency (\texttt{text.count('!')})
+\end{itemize}
+
+The combined feature matrix was constructed by horizontally stacking the sparse \gls{tfidf} matrix with the \gls{vader} scores and structural features using \texttt{scipy\discretionary{.}{}{.}sparse\discretionary{.}{}{.}hstack}, yielding a feature space of 10,008 dimensions per instance.
+
+\section{Model Training and Hyperparameter Optimisation}
+
+All four model architectures were trained on the training partition (80\%, approximately 1,279,000 instances) after \gls{smote} balancing. Table~\ref{tab:hyperparams} summarises the optimal hyperparameters identified through 5-fold cross-validation.
+
+\begin{table}[H]
+\centering
+\caption{Optimal hyperparameters identified through 5-fold cross-validation.}
+\label{tab:hyperparams}
+\begin{tabularx}{\linewidth}{lX}
+  \toprule
+  \rowcolor{uwsblue!90}
+  \textcolor{white}{\textbf{Model}} & \textcolor{white}{\textbf{Optimal Hyperparameters}} \\
+  \midrule
+  \rowcolor{tablegrey}
+  Logistic Regression & $C = 1.0$; solver = \texttt{lbfgs}; \texttt{multi\_class = multinomial} \\
+  Random Forest       & 100 estimators; \texttt{max\_depth = None}; \texttt{min\_samples\_split = 2} \\
+  \rowcolor{tablegrey}
+  MLP Neural Network  & Hidden layers = (256, 128); activation = \texttt{relu}; \texttt{max\_iter = 50} \\
+  DistilBERT          & LR = 2e-5; batch size = 32; epochs = 3; fine-tuned on 50,000-tweet subsample \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+DistilBERT fine-tuning was implemented using the HuggingFace Transformers library with the \texttt{distilbert\discretionary{-}{}{-}base\discretionary{-}{}{-}uncased} pretrained checkpoint and an AdamW optimiser. A classification head (linear layer mapping the 768-dimensional \texttt{[CLS]} token representation to 3 output classes) was added. Fine-tuning was conducted on Google Colab with T4 GPU acceleration. The 50,000-tweet subsample is justified by \citet{sun2019fine}, who demonstrate performance plateaus beyond this size for sentiment classification fine-tuning.
+
+\section{Temporal Sentiment Analysis}
+
+Following model training, all four models were applied to generate sentiment predictions and class probability scores across the full dataset. Daily sentiment aggregates were computed by grouping the DataFrame by parsed date:
+
+\begin{equation}
+  v_t = \bar{c}_t - \bar{c}_{t-1}
+  \label{eq:velocity}
+\end{equation}
+
+where $v_t$ denotes the sentiment velocity at day $t$ and $\bar{c}_t$ the mean compound \gls{vader} score on day $t$. Intensity change is defined as $|v_t|$. A 7-day rolling mean was applied to the compound score time series prior to velocity computation to remove weekly cyclical effects.
+
+Lag correlation analysis tested the predictive relationship between $v_t$ and tweet volume at $t+k$ (for $k = 1, \ldots, 7$) using Pearson's correlation coefficient with associated $p$-values computed via \texttt{scipy.stats.pearsonr}.
+
+\section{Implementation Environment}
+
+Table~\ref{tab:libraries} summarises the core Python libraries used in the implementation.
+
+\begin{table}[H]
+\centering
+\caption{Core Python libraries used in the implementation pipeline.}
+\label{tab:libraries}
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+  \toprule
+  \rowcolor{uwsblue!90}
+  \textcolor{white}{\textbf{Library}} & \textcolor{white}{\textbf{Version}} & \textcolor{white}{\textbf{Purpose}} \\
+  \midrule
+  \rowcolor{tablegrey}
+  Pandas            & 2.0        & Data manipulation and temporal aggregation \\
+  NumPy             & 1.24       & Numerical computation \\
+  \rowcolor{tablegrey}
+  NLTK              & 3.8        & Tokenisation, stopword removal, lemmatisation \\
+  spaCy             & 3.6        & NLP pipeline \\
+  \rowcolor{tablegrey}
+  scikit-learn      & 1.3        & Classical model training and evaluation \\
+  PyTorch           & 2.0        & DistilBERT implementation \\
+  \rowcolor{tablegrey}
+  Transformers      & 4.30       & HuggingFace model hub and fine-tuning \\
+  vaderSentiment    & 3.3        & Lexicon-based sentiment scoring \\
+  \rowcolor{tablegrey}
+  imbalanced-learn  & 0.11       & SMOTE oversampling \\
+  SHAP              & 0.42       & TreeExplainer feature attribution \\
+  \rowcolor{tablegrey}
+  LIME              & 0.2        & Local surrogate model explanations \\
+  Matplotlib/Seaborn & 3.7/0.12  & Visualisation \\
+  \bottomrule
+\end{tabularx}
+\end{table}
